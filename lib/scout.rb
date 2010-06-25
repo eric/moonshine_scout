@@ -24,29 +24,33 @@ module Scout
       :minute   => "*/#{options[:interval]||1}",
       :user     => options[:user] || configuration[:user] || 'daemon'
 
-    # needed for apache status plugin
-    package 'lynx', :ensure => :installed, :before => package('scout')
-    cron 'cleanup_lynx_tempfiles',
-      :command  => "find /tmp/ -name 'lynx*' -type d -delete",
-      :hour     => '0',
-      :minute   => '0'
+    unless options[:apache_plugin] == false
+      # needed for apache status plugin
+      package 'lynx', :ensure => :installed, :before => package('scout')
+      cron 'cleanup_lynx_tempfiles',
+        :command  => "find /tmp/ -name 'lynx*' -type d -delete",
+        :hour     => '0',
+        :minute   => '0'
+    end
 
-    # provides iostat, needed for disk i/o plugin
-    package 'sysstat', :ensure => :installed, :before => package('scout')
+    unless options[:iostat_plugin] == false
+      # provides iostat, needed for disk i/o plugin
+      package 'sysstat', :ensure => :installed, :before => package('scout')
+    end
 
-    # needed for the rails plugin
-    gem 'elif', :before => package('scout')
-    gem 'request-log-analyzer', :before => package('scout')
+    unless options[:rails_plugin] == false
+      # needed for the rails plugin
+      gem 'elif', :before => package('scout')
+      gem 'request-log-analyzer', :before => package('scout')
+    end
 
-    # disable the old scout_agent
-    file '/etc/init.d/scout_agent',
-      :content => template(File.join(File.dirname(__FILE__), '..', 'templates', 'scout_agent.init.erb'), binding),
-      :mode    => '744'
-
-    service 'scout_agent',
-      :enable  => false,
-      :ensure  => :stopped,
-      :require => file('/etc/init.d/scout_agent')
+    unless options[:shutdown_old_agent] == false
+      service 'scout_agent',
+        :enable   => false,
+        :ensure   => :stopped,
+        :provider => :base,
+        :pattern  => 'scout_agent'
+    end
   end
 
 end
