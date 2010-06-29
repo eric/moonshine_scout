@@ -18,9 +18,15 @@ module Scout
       return
     end
 
+    scout_command = "/usr/bin/scout #{options[:agent_key]}"
+
+    if options[:supress_output]
+      scout_command += " > /dev/null 2>&1"
+    end
+
     gem 'scout', :ensure => :latest
     cron 'scout_checkin',
-      :command  => "/usr/bin/scout #{options[:agent_key]}",
+      :command  => scout_command,
       :minute   => "*/#{options[:interval]||1}",
       :user     => options[:user] || configuration[:user] || 'daemon'
 
